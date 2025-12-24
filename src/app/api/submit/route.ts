@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+// Inicializa Supabase
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -15,16 +16,17 @@ export async function POST(request: Request) {
       email,
       phone,
       dobConfirmed,
+      ageRange,
       wantsPhysicalInvites,
       cep,
       preferences,
+      freq,
+      socialNetwork,
+      socialHandle,
       consentBasic,
       consentPersonalization,
       consentStats,
       consentPartners,
-      socialNetwork,
-      socialHandle,
-      freq,
     } = body;
 
     // --- VALIDAÇÕES ---
@@ -38,6 +40,13 @@ export async function POST(request: Request) {
     if (!dobConfirmed) {
       return NextResponse.json(
         { error: "É necessário confirmar que você tem 18+." },
+        { status: 400 }
+      );
+    }
+
+    if (!ageRange) {
+      return NextResponse.json(
+        { error: "Faixa etária é obrigatória." },
         { status: 400 }
       );
     }
@@ -56,13 +65,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // --- INSERT NO SUPABASE ---
+    // --- INSERIR NO SUPABASE ---
     const { error } = await supabase.from("submissions").insert([
       {
         name,
         email,
         phone,
         dob_confirmed: dobConfirmed,
+        age_range: ageRange,              // 👈 Faixa etária
         wants_physical: wantsPhysicalInvites,
         cep,
         preferences,
@@ -77,7 +87,7 @@ export async function POST(request: Request) {
     ]);
 
     if (error) {
-      console.error(error);
+      console.error("Erro ao salvar no Supabase:", error);
       return NextResponse.json(
         { error: "Erro ao salvar no banco." },
         { status: 500 }
@@ -89,7 +99,7 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (e) {
-    console.error(e);
+    console.error("Erro no servidor:", e);
     return NextResponse.json(
       { error: "Payload inválido ou erro no servidor." },
       { status: 400 }
